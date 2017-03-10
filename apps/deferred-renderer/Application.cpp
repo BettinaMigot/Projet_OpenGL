@@ -301,8 +301,7 @@ void Application::initScene()
     glGenBuffers(1, &m_SceneIBO);
 
     {
-        //const auto objPath = m_AssetsRootPath / "glmlv" / "models" / "crytek-sponza" / "sponza.obj";
-        const auto objPath = m_AssetsRootPath / "glmlv" / "models" / "sapin" / "sapin.obj";
+        const auto objPath = m_AssetsRootPath / "glmlv" / "models" / "dalmatian" / "room.unity_86.obj";
         glmlv::ObjData data;
         loadObj(objPath, data);
         m_SceneSize = data.bboxMax - data.bboxMin;
