@@ -29,6 +29,11 @@ private:
         return glm::vec3(sinPhi * sinTheta, glm::cos(thetaRadians), cosPhi * sinTheta);
     }
 
+    static GLfloat lerp(GLfloat a, GLfloat b, GLfloat f)
+    {
+        return a + f * (b - a);
+    }  
+
     const size_t m_nWindowWidth = 1280;
     const size_t m_nWindowHeight = 720;
     glmlv::GLFWHandle m_GLFWHandle{ m_nWindowWidth, m_nWindowHeight, "Template" }; // Note: the handle must be declared before the creation of any object managing OpenGL resource (e.g. GLProgram, GLShader)
@@ -48,11 +53,12 @@ private:
         GDiffuse,
         GGlossyShininess,
         GDepth,
+        GSSAO,
         GBufferTextureCount
     };
 
-    const char * m_GBufferTexNames[GBufferTextureCount + 1] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth", "beauty" }; // Tricks, since we cant blit depth, we use its value to draw the result of the shading pass
-    const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGBA32F, GL_DEPTH_COMPONENT32F };
+    const char * m_GBufferTexNames[GBufferTextureCount + 1] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth", "ssao", "beauty" }; // Tricks, since we cant blit depth, we use its value to draw the result of the shading pass
+    const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGBA32F, GL_DEPTH_COMPONENT32F, GL_RGB32F };
     GLuint m_GBufferTextures[GBufferTextureCount];
     GLuint m_GBufferFBO; // Framebuffer object
 
@@ -66,6 +72,18 @@ private:
     GLuint m_SceneVBO = 0;
     GLuint m_SceneIBO = 0;
     GLuint m_SceneVAO = 0;
+
+    // SSAO data
+    GLuint ssaoFBO = 0;
+    GLuint ssaoBlurFBO = 0;
+    GLuint ssaoColorBuffer = 0;
+    GLuint ssaoColorBufferBlur = 0;
+
+    // SSAO noise texture
+    GLuint m_noiseTexture;
+    std::vector<glm::vec3> m_ssaoKernel;
+    std::vector<glm::vec3> m_ssaoNoise;
+
 
     // Required data about the scene in CPU in order to send draw calls
     struct ShapeInfo
@@ -107,6 +125,9 @@ private:
     glmlv::GLProgram m_shadingPassProgram;
     glmlv::GLProgram m_displayDepthProgram;
     glmlv::GLProgram m_displayPositionProgram;
+    glmlv::GLProgram m_SSAOProgram;
+    glmlv::GLProgram m_SSAOBlurProgram;
+    glmlv::GLProgram m_displaySSAOProgram;
 
     // Geometry pass uniforms
     GLint m_uModelViewProjMatrixLocation;
@@ -123,6 +144,7 @@ private:
 
     // Shading pass uniforms
     GLint m_uGBufferSamplerLocations[GDepth];
+    GLint m_uSSAOLocation;
     GLint m_uDirectionalLightDirLocation;
     GLint m_uDirectionalLightIntensityLocation;
     GLint m_uPointLightPositionLocation;
@@ -135,14 +157,19 @@ private:
     GLint m_uGPositionSamplerLocation;
     GLint m_uSceneSizeLocation;
 
+    // SSAO uniforms
+    GLint m_uSSAOGPosition;
+    GLint m_uSSAOGNormal;
+    GLint m_uSSAOTexNoise;
+
     // Lights
     float m_DirLightPhiAngleDegrees = 140.f;
     float m_DirLightThetaAngleDegrees = 45.f;
     glm::vec3 m_DirLightDirection = computeDirectionVector(glm::radians(m_DirLightPhiAngleDegrees), glm::radians(m_DirLightThetaAngleDegrees));
-    glm::vec3 m_DirLightColor = glm::vec3(1, 1, 1);
-    float m_DirLightIntensity = 1.f;
+    glm::vec3 m_DirLightColor = glm::vec3(0.8, 0.8, 1);
+    float m_DirLightIntensity = 0.5f;
 
-    glm::vec3 m_PointLightPosition = glm::vec3(0, 1, 0);
+    glm::vec3 m_PointLightPosition = glm::vec3(0, 3.4, 0.3);
     glm::vec3 m_PointLightColor = glm::vec3(1, 1, 1);
     float m_PointLightIntensity = 5.f;
 

@@ -6,8 +6,10 @@ uniform sampler2D uGNormal;
 uniform sampler2D uGAmbient;
 uniform sampler2D uGDiffuse;
 uniform sampler2D uGGlossyShininess;
+uniform sampler2D uSSAO;
 
 out vec3 fColor;
+in vec2 TexCoords;
 
 uniform vec3 uDirectionalLightDir;
 uniform vec3 uDirectionalLightIntensity;
@@ -26,6 +28,9 @@ void main()
     vec3 ks = ksShininess.rgb;
     float shininess = ksShininess.a;
 
+    float AmbientOcclusion = texelFetch(uSSAO, ivec2(gl_FragCoord.xy), 0).r; // ka ?
+    ka*= AmbientOcclusion;
+    
     vec3 eyeDir = normalize(-position);
 
     float distToPointLight = length(uPointLightPosition - position);
